@@ -144,8 +144,52 @@ detected time columns (`tax_year`, `fiscal_year_end`), detected geo column
 
 ## Roadmap
 
-| Phase | Focus |
-|-------|-------|
-| **W1–W2** | Ingestion skeleton (complete) |
-| **W3** | Cleaning & harmonization, join compatibility detection |
-| **W4** | Autonomous contextual discovery, LLM orchestration |
+### W1–W2 — Workflow research + dataset scouting
+- Research previous data integration structure vs structured agent pipeline design
+- Finalize architecture
+- Evaluate Claude Opus 4.6 v Codex API/tool use
+- Scout nonprofit datasets and total results goal
+- Initialize repo structure
+- Select majority of datasets with documented schema
+- Finalize system architecture diagram
+- Initialize repo with data ingestion skeleton
+- Select LLM and editor for project use
+
+### W3–W4 — Data ingestion + cleaning pipeline (v1)
+- Implement file ingestion (CSV/XLSX/JSON)
+- Auto-generate schema + dataset_profile object
+- Connect cleaning agent to Claude
+- Execute returned cleaning code safely
+- Implement transformation logging
+- Raw dataset → cleaned dataset pipeline running
+- Transformation logs stored
+- dataset_profile JSON generated
+
+### W5–W6 — Multi-dataset capabilities + join engine
+- Implement dataset registry structure (keys/metrics)
+- Normalize join keys (states, years, ages?)
+- Build controlled merge engine
+- Allow user to choose 'primary' and 'context' datasets
+- Two cleaned datasets can be merged reliably (ex goal nonprofit financials + L.A. unemployment data)
+- Merged dataset checked and saved
+
+### W7–W8 — Contextual Relationship Query Agent (Grouped Analysis)
+- Design Query Agent to generate correlational queries and results (no manual SQL queries)
+- Generate simple visualizations and correlational outputs
+- System autonomously produces multiple grouped contextual results
+- Confirm no need for user prompting for analysis
+- Merged summaries generated
+
+### W9–W10 — Interpretive Layer + Robust Query Expansion
+- Implement heuristics to rank findings
+- Filter out trivial correlational relationships
+- System outputs top-n correlational findings
+- Outputs both graphs and explanation
+- Weak relationships can be seen dropped
+
+### W11–W12 — Scaled Testing across 10+ Datasets + Compile results
+- Stress test across additional context (GDP, poverty, disaster rates, internet rates, etc.)
+- Improve ranking heuristics
+- Document end-to-end runs of 5 pairs of datasets
+- Record best results for final report
+
