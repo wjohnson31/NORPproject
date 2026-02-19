@@ -86,28 +86,52 @@ This will:
 | `--file` | `-f` | Yes | Path to the raw data file (CSV, Excel, or JSON) |
 | `--name` | `-n` | Yes | A short identifier for the dataset (e.g., `irs_990_2020`) |
 
-## Modules
+## Data Ingestion Pipeline
+When you run the command on a fresh dataset:
 
-### `DatasetLoader` (`ingestion/loader.py`)
-Loads CSV, Excel, or JSON files with automatic type detection and encoding
-fallback (UTF-8 → Latin-1). Normalizes column names to lowercase with
-underscores. Returns a raw pandas DataFrame — no values are modified.
-
-### `SchemaProfiler` (`ingestion/schema.py`)
-Extracts column names, dtypes, row/column counts, and per-column missingness.
-Uses keyword heuristics to flag potential time columns (`year`, `date`,
-`fiscal_year`, etc.) and geography columns (`state`, `fips`, `zip`, etc.).
-
-### `DatasetRegistry` (`ingestion/registry.py`)
-Maintains a persistent JSON registry of all ingested datasets with file paths,
-schema profiles, timestamps, and shape information. Re-ingesting with the
-same name overwrites the previous entry.
+```
+You run: python -m data_pipeline --file <file> --name <name>
+         │
+         ▼
+    1. LOADER (loader.py)
+       Reads the file (CSV, Excel, or JSON) into memory.
+       Cleans up column names: "Tax Year" → "tax_year"
+         │
+         ▼
+    2. PROFILER (schema.py)
+       Looks at the loaded data and writes a summary:
+       - How many rows and columns
+       - What % of each column is empty (missingness)
+       - Which columns look like dates (tax_year, fiscal_year, etc.)
+       - Which columns look like locations (state, fips, zip, etc.)
+       Saves this summary → data/processed/<name>_profile.json
+         │
+         ▼
+    3. REGISTRY (registry.py)
+       Records that this dataset exists in a catalog:
+       - Name, file path, column info, timestamp
+       Saves the catalog → data/processed/registry.json
+         │
+         ▼
+    4. CLEANER
+       Fixes bad values, fills gaps, standardizes formats (e.g., state abbreviations)
+         │
+         ▼
+    5. HARMONIZER
+       Makes different datasets speak the same language (matching column names, types, units)
+         │
+         ▼
+    6. JOIN DETECTOR
+       Compares profiles to find shared keys (e.g., both have state + year → joinable)
+         │
+         ▼
+    7. LLM ORCHESTRATOR
+       Generates and runs queries across linked datasets in the background, reports final result to user.
+```
 
 ## Testing the Ingestion Pipeline
 
 Activate the virtual environment first: `source .venv/bin/activate`
-
-### Full Pipeline (End-to-End)
 
 ```bash
 python -m data_pipeline --file data/raw/sample_for_testing_extract.csv --name sample_for_testing
