@@ -1,14 +1,18 @@
 # NORP — Nonprofit Research Pipeline
 
-A modular data ingestion infrastructure for nonprofit financial research.
+An LLM-assisted data pipeline for nonprofit financial research and contextual discovery.
+
+> **For AI/LLM context:** See [INSTRUCTIONS.md](INSTRUCTIONS.md) for a machine-readable
+> guide to building, running, testing, and extending this project.
 
 ## Overview
 
-NORP provides the foundational skeleton for loading, profiling, and registering
-nonprofit financial datasets (e.g., IRS 990 extracts) and external contextual
-datasets (e.g., state-level unemployment data).
+NORP - Frontier LLM Integration for Automated Dataset Cleaning and Correlation Query Results -  ingests nonprofit financial datasets and external socioeconomic data,
+cleans them using LLM-generated code, and will ultimately link them to
+autonomously surface correlational insights.
 
-**Current phase (W3–W4):** Data ingestion + cleaning pipeline (v1). Raw → profile → optional Claude cleaning → cleaned dataset + transformation logs.
+**Current status (W3–W4 complete):** Raw datasets go in → profiled → cleaned
+via OpenAI → cleaned CSV + transformation log come out.
 
 ## Project Structure
 
@@ -34,7 +38,8 @@ norp/
 │   ├── processed/           # dataset_profile JSON, registry, transform logs
 │   └── cleaned/             # Cleaned output CSVs (after cleaning pipeline)
 ├── requirements.txt
-└── README.md
+├── README.md
+└── INSTRUCTIONS.md       # AI-facing project context for LLM workflows
 ```
 
 ## Setup
@@ -58,7 +63,18 @@ pip install -r requirements.txt
 This installs:
 - **pandas** — DataFrame loading and manipulation
 - **openpyxl** — Excel (.xlsx) file support
-- **openai** — OpenAI API for the cleaning agent (optional; pipeline runs without it if `--no-clean` or no `OPENAI_API_KEY`)
+- **openai** — OpenAI API for the cleaning agent
+- **python-dotenv** — Loads API keys from `.env` file
+
+### 3. Set up your API key (for cleaning)
+
+Create a `.env` file in the project root:
+
+```bash
+echo 'OPENAI_API_KEY=your-key-here' > .env
+```
+
+The pipeline works without this — it just skips the cleaning step.
 
 ## Usage
 
@@ -67,19 +83,13 @@ This installs:
 source .venv/bin/activate
 ```
 
-### Ingest a dataset (with optional cleaning)
+### Ingest + clean a dataset
 
 ```bash
 python -m data_pipeline --file <path-to-file> --name <dataset-name>
 ```
 
-With cleaning **skipped** (ingest + profile + register only):
-
-```bash
-python -m data_pipeline --file <path-to-file> --name <dataset-name> --no-clean
-```
-
-**Example with the included sample data:**
+**Example:**
 
 ```bash
 python -m data_pipeline --file data/raw/sample_for_testing_extract.csv --name sample_for_testing
@@ -88,10 +98,13 @@ python -m data_pipeline --file data/raw/sample_for_testing_extract.csv --name sa
 This will:
 1. Load the file (CSV, Excel, or JSON) into a DataFrame with normalized column names
 2. Generate a **dataset_profile** (schema, dtypes, missingness, time/geo columns) and save to `data/processed/<name>_profile.json`
-3. If **OPENAI_API_KEY** is set and you did not pass `--no-clean`: call OpenAI to generate cleaning code, execute it safely, log the step, and write the cleaned dataset to `data/cleaned/<name>_cleaned.csv` and the transformation log to `data/processed/<name>_transform_log.json`
-4. Register the dataset in `data/processed/registry.json` (including paths to cleaned file and transform log when cleaning ran)
+3. Send the profile + a data sample to OpenAI, receive cleaning code, execute it in a sandbox, and save the cleaned dataset to `data/cleaned/<name>_cleaned.csv` with a transformation log at `data/processed/<name>_transform_log.json`
+4. Register the dataset in `data/processed/registry.json`
 
-**Cleaning step:** Set `OPENAI_API_KEY` in your `.env` or environment to enable the OpenAI-backed cleaner (e.g. GPT-4o). The agent receives the dataset profile and a sample of the data and returns Python code that runs in a sandbox (only `pandas` and `numpy`; no file I/O or network).
+> **Ingest only (no cleaning):** If you want to skip the cleaning step, add `--no-clean`:
+> ```bash
+> python -m data_pipeline --file <path-to-file> --name <dataset-name> --no-clean
+> ```
 
 ### CLI flags
 
@@ -101,7 +114,7 @@ This will:
 | `--name` | `-n` | Yes | A short identifier for the dataset (e.g., `irs_990_2020`) |
 | `--no-clean` | — | No | Skip the cleaning step (ingest + profile + register only) |
 
-## Data Ingestion Pipeline
+## Pipeline Flow
 When you run the command on a fresh dataset:
 
 ```
