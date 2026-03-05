@@ -19,19 +19,35 @@ import os
 from pathlib import Path
 
 # ---------------------------------------------------------------------------
+# Load .env from project root (so ANTHROPIC_API_KEY etc. are available)
+# ---------------------------------------------------------------------------
+
+_project_root = Path(__file__).resolve().parent.parent
+_env_file = _project_root / ".env"
+if _env_file.exists():
+    try:
+        from dotenv import load_dotenv
+        load_dotenv(_env_file)
+    except ImportError:
+        pass  # python-dotenv not installed; rely on system env only
+
+# ---------------------------------------------------------------------------
 # Path configuration
 # ---------------------------------------------------------------------------
 
 # Project root is two levels up from this file:
 #   <project_root>/data_pipeline/config.py  →  <project_root>
-PROJECT_ROOT: Path = Path(__file__).resolve().parent.parent
+PROJECT_ROOT: Path = _project_root
 
 # Raw input data lives here.  Users should drop CSVs / Excel / JSON files
 # into this directory before running the pipeline.
 RAW_DATA_DIR: Path = PROJECT_ROOT / "data" / "raw"
 
-# Processed outputs (schema profiles, registry) are written here.
+# Processed outputs (schema profiles, registry, transformation logs) are written here.
 PROCESSED_DATA_DIR: Path = PROJECT_ROOT / "data" / "processed"
+
+# Cleaned datasets (output of the cleaning pipeline) are written here.
+CLEANED_DATA_DIR: Path = PROJECT_ROOT / "data" / "cleaned"
 
 # The dataset registry is a single JSON file that accumulates metadata
 # about every dataset that has been ingested.
@@ -43,6 +59,7 @@ REGISTRY_PATH: Path = PROCESSED_DATA_DIR / "registry.json"
 
 RAW_DATA_DIR.mkdir(parents=True, exist_ok=True)
 PROCESSED_DATA_DIR.mkdir(parents=True, exist_ok=True)
+CLEANED_DATA_DIR.mkdir(parents=True, exist_ok=True)
 
 # ---------------------------------------------------------------------------
 # Logging configuration

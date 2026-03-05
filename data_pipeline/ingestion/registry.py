@@ -66,6 +66,9 @@ class DatasetRegistry:
         dataset_name: str,
         file_path: str | Path,
         profile: dict[str, Any],
+        *,
+        cleaned_file_path: str | Path | None = None,
+        transform_log_path: str | Path | None = None,
     ) -> None:
         """Register a new dataset or update an existing entry.
 
@@ -78,6 +81,10 @@ class DatasetRegistry:
             Absolute path to the source file.
         profile : dict
             The schema profile produced by :class:`SchemaProfiler`.
+        cleaned_file_path : str or Path, optional
+            Path to the cleaned output file (after cleaning pipeline).
+        transform_log_path : str or Path, optional
+            Path to the transformation log JSON for this dataset.
         """
         if dataset_name in self._registry:
             logger.warning(
@@ -91,6 +98,10 @@ class DatasetRegistry:
             "num_columns": profile.get("num_columns", 0),
             "registered_at": datetime.now(timezone.utc).isoformat(),
         }
+        if cleaned_file_path is not None:
+            entry["cleaned_file_path"] = str(Path(cleaned_file_path).resolve())
+        if transform_log_path is not None:
+            entry["transform_log_path"] = str(Path(transform_log_path).resolve())
 
         self._registry[dataset_name] = entry
         self._save_registry()

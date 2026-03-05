@@ -8,7 +8,7 @@ NORP provides the foundational skeleton for loading, profiling, and registering
 nonprofit financial datasets (e.g., IRS 990 extracts) and external contextual
 datasets (e.g., state-level unemployment data).
 
-**Current phase (W1–W2):** Data ingestion skeleton only.
+**Current phase (W3–W4):** Data ingestion + cleaning pipeline (v1). Raw → profile → optional Claude cleaning → cleaned dataset + transformation logs.
 
 ## Project Structure
 
@@ -18,16 +18,21 @@ norp/
 │   ├── __init__.py          # Package root
 │   ├── __main__.py          # python -m entry point
 │   ├── config.py            # Paths & logging configuration
-│   ├── main.py              # CLI orchestrator
-│   └── ingestion/
-│       ├── __init__.py      # Sub-package exports
-│       ├── loader.py        # DatasetLoader — file I/O + column normalization
-│       ├── schema.py        # SchemaProfiler — metadata extraction
-│       └── registry.py      # DatasetRegistry — JSON persistence
+│   ├── main.py              # CLI orchestrator (ingest + cleaning)
+│   ├── ingestion/
+│   │   ├── __init__.py
+│   │   ├── loader.py        # DatasetLoader — CSV/Excel/JSON + column normalization
+│   │   ├── schema.py        # SchemaProfiler — dataset_profile (schema + stats)
+│   │   └── registry.py     # DatasetRegistry — JSON persistence
+│   └── cleaning/
+│       ├── __init__.py
+│       ├── agent.py         # CleaningAgent — Claude-generated cleaning code
+│       ├── executor.py      # SafeCleaningExecutor — restricted execution
+│       └── transform_log.py # TransformationLog — step logging + JSON
 ├── data/
 │   ├── raw/                 # Drop source files here
-│   │   └── sample_for_testing_extract.csv
-│   └── processed/           # Profiles & registry written here
+│   ├── processed/           # dataset_profile JSON, registry, transform logs
+│   └── cleaned/             # Cleaned output CSVs (after cleaning pipeline)
 ├── requirements.txt
 └── README.md
 ```
@@ -53,6 +58,7 @@ pip install -r requirements.txt
 This installs:
 - **pandas** — DataFrame loading and manipulation
 - **openpyxl** — Excel (.xlsx) file support
+- **openai** — OpenAI API for the cleaning agent (optional; pipeline runs without it if `--no-clean` or no `OPENAI_API_KEY`)
 
 ## Usage
 
@@ -61,10 +67,16 @@ This installs:
 source .venv/bin/activate
 ```
 
-### Ingest a dataset
+### Ingest a dataset (with optional cleaning)
 
 ```bash
 python -m data_pipeline --file <path-to-file> --name <dataset-name>
+```
+
+With cleaning **skipped** (ingest + profile + register only):
+
+```bash
+python -m data_pipeline --file <path-to-file> --name <dataset-name> --no-clean
 ```
 
 **Example with the included sample data:**
@@ -74,10 +86,12 @@ python -m data_pipeline --file data/raw/sample_for_testing_extract.csv --name sa
 ```
 
 This will:
-1. Load the CSV into a DataFrame with normalized column names
-2. Generate a schema profile (dtypes, missingness, detected time/geo columns)
-3. Register the dataset in `data/processed/registry.json`
-4. Save the profile to `data/processed/sample_for_testing_profile.json`
+1. Load the file (CSV, Excel, or JSON) into a DataFrame with normalized column names
+2. Generate a **dataset_profile** (schema, dtypes, missingness, time/geo columns) and save to `data/processed/<name>_profile.json`
+3. If **OPENAI_API_KEY** is set and you did not pass `--no-clean`: call OpenAI to generate cleaning code, execute it safely, log the step, and write the cleaned dataset to `data/cleaned/<name>_cleaned.csv` and the transformation log to `data/processed/<name>_transform_log.json`
+4. Register the dataset in `data/processed/registry.json` (including paths to cleaned file and transform log when cleaning ran)
+
+**Cleaning step:** Set `OPENAI_API_KEY` in your `.env` or environment to enable the OpenAI-backed cleaner (e.g. GPT-4o). The agent receives the dataset profile and a sample of the data and returns Python code that runs in a sandbox (only `pandas` and `numpy`; no file I/O or network).
 
 ### CLI flags
 
@@ -85,6 +99,7 @@ This will:
 |------|-------|----------|-------------|
 | `--file` | `-f` | Yes | Path to the raw data file (CSV, Excel, or JSON) |
 | `--name` | `-n` | Yes | A short identifier for the dataset (e.g., `irs_990_2020`) |
+| `--no-clean` | — | No | Skip the cleaning step (ingest + profile + register only) |
 
 ## Data Ingestion Pipeline
 When you run the command on a fresh dataset:
@@ -113,8 +128,10 @@ You run: python -m data_pipeline --file <file> --name <name>
        Saves the catalog → data/processed/registry.json
          │
          ▼
-    4. CLEANER
-       Fixes bad values, fills gaps, standardizes formats (e.g., state abbreviations)
+    4. CLEANER (cleaning/agent.py + executor.py + transform_log.py)
+       If OPENAI_API_KEY is set and not --no-clean: OpenAI suggests cleaning code,
+       it runs in a sandbox, and the cleaned dataset + transformation log are saved.
+       Fixes bad values, fills gaps, standardizes formats (e.g., state abbreviations).
          │
          ▼
     5. HARMONIZER

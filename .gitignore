@@ -1,3 +1,7 @@
+# Environment and secrets
+.env
+.env.local
+
 # Virtual environment
 .venv/
 
@@ -19,3 +23,11 @@ __pycache__/
 # Pipeline outputs (keep structure via .gitkeep)
 data/processed/*.json
 !data/processed/.gitkeep
+
+# Raw and cleaned data (too large for GitHub; keep locally only)
+data/raw/*.csv
+data/raw/*.xlsx
+data/raw/*.json
+data/cleaned/*.csv
+data/cleaned/*.xlsx
+data/cleaned/*.json
