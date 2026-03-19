@@ -42,6 +42,12 @@ _GEO_KEYWORDS: set[str] = {
     "state_cd", "state_code", "st",
 }
 
+# Keywords that suggest a column is an identifier (key, not a metric).
+_ID_KEYWORDS: set[str] = {
+    "id", "ein", "code", "key", "name", "desc", "description",
+    "type", "category", "status", "ntee", "naics", "sic",
+}
+
 
 class SchemaProfiler:
     """Profile the schema and basic statistics of a DataFrame.
@@ -84,22 +90,32 @@ class SchemaProfiler:
         dict
             A JSON-serializable dictionary containing all profile fields.
         """
+        time_cols = self._detect_time_columns()
+        geo_cols = self._detect_geo_columns()
+
         profile: dict[str, Any] = {
             "columns": self._extract_columns(),
             "dtypes": self._extract_dtypes(),
             "num_rows": self._count_rows(),
             "num_columns": self._count_columns(),
             "missingness": self._compute_missingness(),
-            "time_columns": self._detect_time_columns(),
-            "geo_columns": self._detect_geo_columns(),
+            "time_columns": time_cols,
+            "geo_columns": geo_cols,
+            "column_roles": self._detect_column_roles(time_cols, geo_cols),
         }
 
+        roles = profile["column_roles"]
+        n_keys = sum(1 for r in roles.values() if r == "key")
+        n_metrics = sum(1 for r in roles.values() if r == "metric")
         logger.info(
-            "Profile generated — rows=%d, cols=%d, time_cols=%d, geo_cols=%d",
+            "Profile generated — rows=%d, cols=%d, time=%d, geo=%d, "
+            "keys=%d, metrics=%d",
             profile["num_rows"],
             profile["num_columns"],
-            len(profile["time_columns"]),
-            len(profile["geo_columns"]),
+            len(time_cols),
+            len(geo_cols),
+            n_keys,
+            n_metrics,
         )
 
         return profile
@@ -188,3 +204,38 @@ class SchemaProfiler:
         if matches:
             logger.info("Detected potential geo columns: %s", matches)
         return matches
+
+    def _detect_column_roles(
+        self, time_cols: list[str], geo_cols: list[str],
+    ) -> dict[str, str]:
+        """Classify each column as ``'key'``, ``'metric'``, or ``'dimension'``.
+
+        Rules:
+            - Time and geo columns are always ``'key'``.
+            - Columns whose name contains an ID keyword are ``'key'``.
+            - Remaining numeric columns are ``'metric'``.
+            - Everything else is ``'dimension'``.
+
+        Returns
+        -------
+        dict[str, str]
+            Column name → role string.
+        """
+        key_cols = set(time_cols) | set(geo_cols)
+        roles: dict[str, str] = {}
+
+        for col in self._df.columns:
+            if col in key_cols:
+                roles[col] = "key"
+                continue
+            tokens = set(col.lower().split("_"))
+            if tokens & _ID_KEYWORDS:
+                roles[col] = "key"
+                continue
+            dtype_str = str(self._df[col].dtype)
+            if "int" in dtype_str or "float" in dtype_str:
+                roles[col] = "metric"
+            else:
+                roles[col] = "dimension"
+
+        return roles

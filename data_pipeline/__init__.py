@@ -15,13 +15,15 @@ Architecture:
     - cleaning/agent.py     : OpenAI-backed cleaning code generation
     - cleaning/executor.py  : Safe execution of cleaning code (restricted globals)
     - cleaning/transform_log.py : Transformation logging and JSON persistence
+    - merging/key_normalizer.py : Join key value normalization (states, years)
+    - merging/join_detector.py  : Cross-dataset join key detection
+    - merging/merge_engine.py   : Controlled merge with validation
     - config.py             : Centralized path and logging configuration
-    - main.py               : CLI entry point (ingest + optional cleaning pipeline)
+    - main.py               : CLI entry point (ingest + clean + merge pipeline)
 
 Future phases will add:
-    - Harmonization (W5–W6)
-    - Join compatibility detection (W5–W6)
-    - Autonomous contextual discovery (W7+)
+    - Contextual Relationship Query Agent (W7–W8)
+    - Interpretive Layer + Query Expansion (W9–W10)
 """
 
 __version__ = "0.1.0"

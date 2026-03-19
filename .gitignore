@@ -24,10 +24,19 @@ __pycache__/
 data/processed/*.json
 !data/processed/.gitkeep
 
-# Raw and cleaned data (too large for GitHub; keep locally only)
+# Raw data (too large for GitHub; keep locally only)
 data/raw/*.csv
 data/raw/*.xlsx
 data/raw/*.json
+# Exception: small sample/test files that SHOULD be tracked
+!data/raw/sample_for_testing_extract.csv
+!data/raw/state_unemployment_sample.csv
+
+# Cleaned and merged data (pipeline outputs, not committed)
 data/cleaned/*.csv
 data/cleaned/*.xlsx
 data/cleaned/*.json
+data/merged/*.csv
+data/merged/*.xlsx
+data/merged/*.json
+

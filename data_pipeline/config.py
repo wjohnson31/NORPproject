@@ -49,6 +49,9 @@ PROCESSED_DATA_DIR: Path = PROJECT_ROOT / "data" / "processed"
 # Cleaned datasets (output of the cleaning pipeline) are written here.
 CLEANED_DATA_DIR: Path = PROJECT_ROOT / "data" / "cleaned"
 
+# Merged datasets (output of the merge engine) are written here.
+MERGED_DATA_DIR: Path = PROJECT_ROOT / "data" / "merged"
+
 # The dataset registry is a single JSON file that accumulates metadata
 # about every dataset that has been ingested.
 REGISTRY_PATH: Path = PROCESSED_DATA_DIR / "registry.json"
@@ -60,6 +63,7 @@ REGISTRY_PATH: Path = PROCESSED_DATA_DIR / "registry.json"
 RAW_DATA_DIR.mkdir(parents=True, exist_ok=True)
 PROCESSED_DATA_DIR.mkdir(parents=True, exist_ok=True)
 CLEANED_DATA_DIR.mkdir(parents=True, exist_ok=True)
+MERGED_DATA_DIR.mkdir(parents=True, exist_ok=True)
 
 # ---------------------------------------------------------------------------
 # Logging configuration
