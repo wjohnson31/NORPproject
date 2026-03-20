@@ -311,6 +311,7 @@ def _run_merge(
     detector = JoinDetector()
     join_keys = detector.detect_join_keys(
         primary_profile, context_profile, primary_df, context_df,
+        name_left=primary_name, name_right=context_name,
     )
 
     if not join_keys:

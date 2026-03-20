@@ -105,8 +105,15 @@ class JoinDetector:
         profile_right: dict[str, Any],
         df_left: Optional[pd.DataFrame] = None,
         df_right: Optional[pd.DataFrame] = None,
+        *,
+        name_left: str = "Dataset A",
+        name_right: str = "Dataset B",
     ) -> list[dict[str, Any]]:
         """Find compatible join key pairs between two dataset profiles.
+
+        Uses a two-pass heuristic approach first (synonym groups, then exact
+        name matching).  If no keys are found and ``OPENAI_API_KEY`` is set,
+        falls back to the LLM-based :class:`JoinAgent` for semantic matching.
 
         Parameters
         ----------
@@ -116,6 +123,8 @@ class JoinDetector:
             Schema profile of the right (context) dataset.
         df_left, df_right : pd.DataFrame, optional
             If provided, value overlap is computed to refine confidence.
+        name_left, name_right : str
+            Dataset names for the LLM prompt (only used if LLM fallback fires).
 
         Returns
         -------
@@ -179,9 +188,68 @@ class JoinDetector:
             ]
             logger.info("Detected %d join key pair(s): %s", len(join_keys), summary)
         else:
-            logger.warning("No compatible join keys detected between datasets.")
+            # --- Pass 3: LLM fallback -------------------------------------
+            logger.info(
+                "Heuristic detection found no keys — trying LLM fallback."
+            )
+            join_keys = self._llm_fallback(
+                profile_left, profile_right,
+                df_left, df_right,
+                name_left, name_right,
+            )
 
         return join_keys
+
+    # ------------------------------------------------------------------
+    # LLM fallback
+    # ------------------------------------------------------------------
+
+    def _llm_fallback(
+        self,
+        profile_left: dict[str, Any],
+        profile_right: dict[str, Any],
+        df_left: Optional[pd.DataFrame],
+        df_right: Optional[pd.DataFrame],
+        name_left: str,
+        name_right: str,
+    ) -> list[dict[str, Any]]:
+        """Use :class:`JoinAgent` to detect join keys via LLM."""
+        import os
+        if not os.environ.get("OPENAI_API_KEY"):
+            logger.warning(
+                "OPENAI_API_KEY not set — cannot use LLM fallback for "
+                "join key detection."
+            )
+            return []
+
+        from data_pipeline.merging.join_agent import JoinAgent
+        agent = JoinAgent()
+        llm_keys = agent.detect_join_keys(
+            profile_left, profile_right,
+            df_left, df_right,
+            name_left=name_left,
+            name_right=name_right,
+        )
+
+        # Filter by confidence
+        llm_keys = [
+            jk for jk in llm_keys
+            if jk.get("confidence", 0) >= self._min_confidence
+        ]
+        if llm_keys:
+            summary = [
+                (jk["left_col"], jk["right_col"], jk["key_type"])
+                for jk in llm_keys
+            ]
+            logger.info(
+                "LLM detected %d join key pair(s): %s",
+                len(llm_keys), summary,
+            )
+        else:
+            logger.warning(
+                "LLM fallback also found no compatible join keys."
+            )
+        return llm_keys
 
     # ------------------------------------------------------------------
     # Internal helpers

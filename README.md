@@ -11,8 +11,9 @@ NORP - Frontier LLM Integration for Automated Dataset Cleaning and Correlation Q
 cleans them using LLM-generated code, and will ultimately link them to
 autonomously surface correlational insights.
 
-**Current status (W3–W4 complete):** Raw datasets go in → profiled → cleaned
-via OpenAI → cleaned CSV + transformation log come out.
+**Current status (W5–W6 complete):** Raw datasets go in → profiled → cleaned
+via OpenAI → optionally merged with existing datasets → cleaned/merged CSV +
+transformation log + merge validation report come out.
 
 ## Project Structure
 
@@ -22,24 +23,31 @@ norp/
 │   ├── __init__.py          # Package root
 │   ├── __main__.py          # python -m entry point
 │   ├── config.py            # Paths & logging configuration
-│   ├── main.py              # CLI orchestrator (ingest + cleaning)
+│   ├── main.py              # CLI orchestrator (ingest + clean + merge)
 │   ├── ingestion/
 │   │   ├── __init__.py
 │   │   ├── loader.py        # DatasetLoader — CSV/Excel/JSON + column normalization
-│   │   ├── schema.py        # SchemaProfiler — dataset_profile (schema + stats)
-│   │   └── registry.py     # DatasetRegistry — JSON persistence
-│   └── cleaning/
+│   │   ├── schema.py        # SchemaProfiler — dataset_profile + column roles
+│   │   └── registry.py      # DatasetRegistry — JSON persistence
+│   ├── cleaning/
+│   │   ├── __init__.py
+│   │   ├── agent.py         # CleaningAgent — OpenAI-generated cleaning code
+│   │   ├── executor.py      # SafeCleaningExecutor — restricted execution
+│   │   └── transform_log.py # TransformationLog — step logging + JSON
+│   └── merging/
 │       ├── __init__.py
-│       ├── agent.py         # CleaningAgent — Claude-generated cleaning code
-│       ├── executor.py      # SafeCleaningExecutor — restricted execution
-│       └── transform_log.py # TransformationLog — step logging + JSON
+│       ├── join_detector.py  # Heuristic join key detection (synonym groups)
+│       ├── join_agent.py     # LLM-based join key detection (OpenAI fallback)
+│       ├── key_normalizer.py # Join key value normalization (states, years)
+│       └── merge_engine.py   # Controlled merge with post-merge validation
 ├── data/
 │   ├── raw/                 # Drop source files here
-│   ├── processed/           # dataset_profile JSON, registry, transform logs
-│   └── cleaned/             # Cleaned output CSVs (after cleaning pipeline)
+│   ├── processed/           # Profiles, registry, transform logs, merge reports
+│   ├── cleaned/             # Cleaned output CSVs (after cleaning pipeline)
+│   └── merged/              # Merged output CSVs (after merge step)
 ├── requirements.txt
 ├── README.md
-└── INSTRUCTIONS.md       # AI-facing project context for LLM workflows
+└── INSTRUCTIONS.md          # AI-facing project context for LLM workflows
 ```
 
 ## Setup
@@ -97,13 +105,40 @@ python -m data_pipeline --file data/raw/sample_for_testing_extract.csv --name sa
 
 This will:
 1. Load the file (CSV, Excel, or JSON) into a DataFrame with normalized column names
-2. Generate a **dataset_profile** (schema, dtypes, missingness, time/geo columns) and save to `data/processed/<name>_profile.json`
+2. Generate a **dataset_profile** (schema, dtypes, missingness, time/geo columns, column roles) and save to `data/processed/<name>_profile.json`
 3. Send the profile + a data sample to OpenAI, receive cleaning code, execute it in a sandbox, and save the cleaned dataset to `data/cleaned/<name>_cleaned.csv` with a transformation log at `data/processed/<name>_transform_log.json`
 4. Register the dataset in `data/processed/registry.json`
 
 > **Ingest only (no cleaning):** If you want to skip the cleaning step, add `--no-clean`:
 > ```bash
 > python -m data_pipeline --file <path-to-file> --name <dataset-name> --no-clean
+> ```
+
+### Ingest + merge with an existing dataset
+
+```bash
+python -m data_pipeline --file <path-to-file> --name <dataset-name> --merge-with <existing-dataset>
+```
+
+**Example:**
+
+```bash
+# First, make sure the target dataset is already in the registry
+python -m data_pipeline --file data/raw/sample_for_testing_extract.csv --name sample_for_testing --no-clean
+
+# Then ingest a new dataset and merge it with the existing one
+python -m data_pipeline --file data/raw/state_unemployment_sample.csv --name state_unemployment --no-clean --merge-with sample_for_testing
+```
+
+This will perform all the standard steps above, then:
+5. Detect compatible join keys between the two datasets (heuristic synonym matching first, LLM fallback if needed)
+6. Normalize join key values (e.g., state names → abbreviations, date formats → years)
+7. Merge the datasets and validate the result (key coverage, NaN inflation, row multiplication)
+8. Save the merged CSV to `data/merged/` and a validation report to `data/processed/`
+
+> **Swap primary/context roles:** By default the newly ingested dataset is primary. Add `--as-context` to make the `--merge-with` dataset primary instead:
+> ```bash
+> python -m data_pipeline --file data/raw/state_unemployment_sample.csv --name state_unemployment --no-clean --merge-with sample_for_testing --as-context
 > ```
 
 ### CLI flags
@@ -113,12 +148,14 @@ This will:
 | `--file` | `-f` | Yes | Path to the raw data file (CSV, Excel, or JSON) |
 | `--name` | `-n` | Yes | A short identifier for the dataset (e.g., `irs_990_2020`) |
 | `--no-clean` | — | No | Skip the cleaning step (ingest + profile + register only) |
+| `--merge-with` | — | No | Name of an existing registered dataset to merge with |
+| `--as-context` | — | No | Treat the newly ingested dataset as context (right-side) in the merge |
 
 ## Pipeline Flow
 When you run the command on a fresh dataset:
 
 ```
-You run: python -m data_pipeline --file <file> --name <name>
+You run: python -m data_pipeline --file <file> --name <name> [--merge-with <dataset>]
          │
          ▼
     1. LOADER (loader.py)
@@ -132,6 +169,7 @@ You run: python -m data_pipeline --file <file> --name <name>
        - What % of each column is empty (missingness)
        - Which columns look like dates (tax_year, fiscal_year, etc.)
        - Which columns look like locations (state, fips, zip, etc.)
+       - Column roles: key (joinable) vs metric (numeric) vs dimension (categorical)
        Saves this summary → data/processed/<name>_profile.json
          │
          ▼
@@ -146,17 +184,27 @@ You run: python -m data_pipeline --file <file> --name <name>
        it runs in a sandbox, and the cleaned dataset + transformation log are saved.
        Fixes bad values, fills gaps, standardizes formats (e.g., state abbreviations).
          │
-         ▼
-    5. HARMONIZER
-       Makes different datasets speak the same language (matching column names, types, units)
+         ▼ (if --merge-with is provided)
+    5. JOIN DETECTOR (merging/join_detector.py + join_agent.py)
+       Compares both dataset profiles to find compatible join keys.
+       First tries heuristic synonym groups (e.g., tax_year ↔ year).
+       If no matches found, falls back to LLM-based detection via OpenAI.
          │
          ▼
-    6. JOIN DETECTOR
-       Compares profiles to find shared keys (e.g., both have state + year → joinable)
+    6. KEY NORMALIZER (merging/key_normalizer.py)
+       Standardizes join key values so they match across datasets.
+       States: "California" → "CA". Years: 202012 → 2020.
          │
          ▼
-    7. LLM ORCHESTRATOR
-       Generates and runs queries across linked datasets in the background, reports final result to user.
+    7. MERGE ENGINE (merging/merge_engine.py)
+       Performs a controlled left join, validates the result (key coverage,
+       NaN inflation, row multiplication), and saves:
+       - Merged CSV → data/merged/<primary>_<context>_merged.csv
+       - Validation report → data/processed/<primary>_<context>_merge_report.json
+         │
+         ▼ (future)
+    8. QUERY AGENT (W7–W8)
+       Generates and runs correlational queries across merged datasets.
 ```
 
 ## Testing the Ingestion Pipeline
@@ -195,13 +243,14 @@ detected time columns (`tax_year`, `fiscal_year_end`), detected geo column
 - Transformation logs stored
 - dataset_profile JSON generated
 
-### W5–W6 — Multi-dataset capabilities + join engine
-- Implement dataset registry structure (keys/metrics)
-- Normalize join keys (states, years, ages?)
-- Build controlled merge engine
-- Allow user to choose 'primary' and 'context' datasets
-- Two cleaned datasets can be merged reliably (ex goal nonprofit financials + L.A. unemployment data)
-- Merged dataset checked and saved
+### W5–W6 — Multi-dataset capabilities + join engine ✅
+- ✅ Implement dataset registry structure (keys/metrics) — `column_roles` in SchemaProfiler
+- ✅ Normalize join keys (states, years) — `KeyNormalizer` with 50-state + territory mapping
+- ✅ Build controlled merge engine — `MergeEngine` with validation + reporting
+- ✅ Allow user to choose 'primary' and 'context' datasets — `--merge-with` + `--as-context` flags
+- ✅ Two cleaned datasets can be merged reliably — sample nonprofit + state unemployment merged at 100% key coverage
+- ✅ Merged dataset checked and saved — CSV + JSON validation report
+- ✅ LLM-based join key detection — `JoinAgent` uses OpenAI as fallback when heuristics fail
 
 ### W7–W8 — Contextual Relationship Query Agent (Grouped Analysis)
 - Design Query Agent to generate correlational queries and results (no manual SQL queries)
