@@ -18,11 +18,11 @@ Architecture:
     - merging/key_normalizer.py : Join key value normalization (states, years)
     - merging/join_detector.py  : Cross-dataset join key detection
     - merging/merge_engine.py   : Controlled merge with validation
+    - analysis/contextual_relationship_agent.py : W7–W8 correlations + grouped context
     - config.py             : Centralized path and logging configuration
     - main.py               : CLI entry point (ingest + clean + merge pipeline)
 
 Future phases will add:
-    - Contextual Relationship Query Agent (W7–W8)
     - Interpretive Layer + Query Expansion (W9–W10)
 """
 

@@ -40,3 +40,7 @@ data/merged/*.csv
 data/merged/*.xlsx
 data/merged/*.json
 
+# Relationship analysis outputs (plots, CSVs, JSON, summaries)
+data/analysis/*
+!data/analysis/.gitkeep
+

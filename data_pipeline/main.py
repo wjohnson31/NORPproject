@@ -13,6 +13,8 @@ CLI entry point that orchestrates the full ingestion + cleaning + merge pipeline
     6. Save dataset_profile JSON to ``data/processed/{name}_profile.json``.
     7. If ``--merge-with`` is given, detect join keys with the target dataset,
        normalize keys, merge, validate, and save the result.
+    8. After a successful merge, run contextual relationship analysis unless
+       ``--no-relationship-analysis`` is set.
 
 Usage::
 
@@ -37,6 +39,9 @@ from data_pipeline.config import (
     MERGED_DATA_DIR,
     PROCESSED_DATA_DIR,
     setup_logging,
+)
+from data_pipeline.analysis.contextual_relationship_agent import (
+    run_contextual_relationship_analysis,
 )
 from data_pipeline.ingestion.loader import DatasetLoader
 from data_pipeline.ingestion.schema import SchemaProfiler
@@ -103,6 +108,14 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
             "(the --merge-with dataset becomes primary)."
         ),
     )
+    parser.add_argument(
+        "--no-relationship-analysis",
+        action="store_true",
+        help=(
+            "After a successful merge, skip contextual relationship analysis "
+            "(correlations, grouped summaries, plots)."
+        ),
+    )
     return parser.parse_args(argv)
 
 
@@ -113,6 +126,7 @@ def ingest(
     run_cleaning: bool = True,
     merge_with: str | None = None,
     as_context: bool = False,
+    run_relationship_analysis: bool = True,
 ) -> None:
     """Run the full ingestion + cleaning + merge pipeline for a single dataset.
 
@@ -131,6 +145,9 @@ def ingest(
         Name of a registered dataset to merge with after ingestion.
     as_context : bool, optional
         If True, the newly ingested dataset is context (merge_with is primary).
+    run_relationship_analysis : bool, optional
+        If True (default), after a successful merge run autonomous contextual
+        relationship analysis (pandas only; no SQL or user prompts).
 
     Raises
     ------
@@ -246,6 +263,7 @@ def ingest(
             current_profile=profile,
             merge_with=merge_with,
             as_context=as_context,
+            run_relationship_analysis=run_relationship_analysis,
         )
 
 
@@ -257,6 +275,7 @@ def _run_merge(
     current_profile: dict,
     merge_with: str,
     as_context: bool,
+    run_relationship_analysis: bool = True,
 ) -> None:
     """Execute the merge step after ingestion.
 
@@ -351,6 +370,23 @@ def _run_merge(
     logger.info("  Report      : %s", report_path)
     logger.info("-" * 60)
 
+    if run_relationship_analysis:
+        logger.info("=" * 60)
+        logger.info(
+            "CONTEXTUAL RELATIONSHIP ANALYSIS (autonomous; no SQL / no prompts)"
+        )
+        logger.info("=" * 60)
+        merge_stem = f"{primary_name}_{context_name}"
+        src = f"merged:{primary_name} + {context_name}"
+        try:
+            run_contextual_relationship_analysis(
+                result.merged_df,
+                output_stem=merge_stem,
+                source_description=src,
+            )
+        except Exception as exc:
+            logger.exception("Relationship analysis failed: %s", exc)
+
 
 def main() -> None:
     """CLI entry point."""
@@ -365,6 +401,7 @@ def main() -> None:
             run_cleaning=not args.no_clean,
             merge_with=args.merge_with,
             as_context=args.as_context,
+            run_relationship_analysis=not args.no_relationship_analysis,
         )
     except (FileNotFoundError, ValueError, RuntimeError) as exc:
         logger.error("Ingestion failed: %s", exc)
