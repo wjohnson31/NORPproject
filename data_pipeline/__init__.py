@@ -19,11 +19,9 @@ Architecture:
     - merging/join_detector.py  : Cross-dataset join key detection
     - merging/merge_engine.py   : Controlled merge with validation
     - analysis/contextual_relationship_agent.py : W7–W8 correlations + grouped context
+    - analysis/interpretive_layer.py : W9–W10 interpretive ranking + filtering
     - config.py             : Centralized path and logging configuration
     - main.py               : CLI entry point (ingest + clean + merge pipeline)
-
-Future phases will add:
-    - Interpretive Layer + Query Expansion (W9–W10)
 """
 
 __version__ = "0.1.0"

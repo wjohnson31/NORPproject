@@ -1,0 +1,67 @@
+### Executive Summary of Correlation Analysis Findings
+
+#### Geographic Findings
+
+1. **Neighborhoods with Traffic Collisions and Graffiti Removal Requests**
+   - **Datasets Analyzed:** Traffic collision reports and graffiti removal service requests by neighborhood.
+   - **Hypothesis:** Neighborhoods with more traffic collisions also generate more graffiti removal requests.
+   - **Correlation:** 0.1700
+   - **Explanation:** There is a weak positive correlation between the number of traffic collisions and graffiti removal requests in neighborhoods. This suggests that areas with more traffic incidents might see a slight increase in graffiti removal requests, but the relationship is not strong.
+
+2. **Zipcodes with Traffic Collisions and Bulky Item Pickup Requests**
+   - **Datasets Analyzed:** Traffic collision reports and bulky item pickup service requests by zipcode.
+   - **Hypothesis:** Zipcodes with more traffic collisions also have more bulky item pickup requests.
+   - **Correlation:** 0.3849
+   - **Explanation:** There is a moderate positive correlation, indicating that zipcodes with higher traffic collisions tend to have more bulky item pickup requests. This suggests a somewhat stronger relationship compared to graffiti removal, but still not a strong one.
+
+3. **Council Districts with Traffic Collisions and Illegal Dumping Requests**
+   - **Datasets Analyzed:** Traffic collision reports and illegal dumping pickup service requests by council district.
+   - **Hypothesis:** Council districts with more traffic collisions have more illegal dumping requests.
+   - **Correlation:** 0.4682
+   - **Explanation:** This moderate positive correlation suggests that council districts experiencing more traffic collisions tend to have more illegal dumping requests. The relationship is stronger than the previous geographic findings.
+
+4. **Zipcodes with Traffic Collisions and Graffiti Removal Requests**
+   - **Datasets Analyzed:** Traffic collision reports and graffiti removal service requests by zipcode.
+   - **Hypothesis:** Zipcodes with more traffic collisions have more graffiti removal requests.
+   - **Correlation:** 0.5047
+   - **Explanation:** There is a moderate positive correlation, indicating that zipcodes with higher traffic collisions tend to have more graffiti removal requests. This relationship is relatively stronger compared to other geographic correlations.
+
+5. **Neighborhoods with Traffic Collisions and Dead Animal Removal Requests**
+   - **Datasets Analyzed:** Traffic collision reports and dead animal removal service requests by neighborhood.
+   - **Hypothesis:** Neighborhoods with more traffic collisions have more dead animal removal requests.
+   - **Correlation:** 0.2991
+   - **Explanation:** There is a weak to moderate positive correlation, suggesting that neighborhoods with more traffic collisions might see a slight increase in dead animal removal requests. However, the relationship is not particularly strong.
+
+#### Temporal Findings
+
+6. **Monthly Spikes in Traffic Collisions and Bulky Item Requests**
+   - **Datasets Analyzed:** Monthly traffic collision reports and bulky item pickup service requests.
+   - **Hypothesis:** Monthly spikes in traffic collisions correlate with monthly spikes in bulky item requests.
+   - **Correlation:** 0.9917
+   - **Explanation:** There is an extremely strong positive correlation, indicating that months with higher traffic collisions almost always coincide with more bulky item requests. This suggests a very strong temporal relationship between these two variables.
+
+7. **Monthly Spikes in Traffic Collisions and Illegal Dumping Requests**
+   - **Datasets Analyzed:** Monthly traffic collision reports and illegal dumping pickup service requests.
+   - **Hypothesis:** Monthly spikes in traffic collisions correlate with monthly spikes in illegal dumping requests.
+   - **Correlation:** 0.9843
+   - **Explanation:** Similar to the bulky item requests, there is an extremely strong positive correlation, showing that months with increased traffic collisions are strongly associated with more illegal dumping requests. This indicates a significant temporal relationship.
+
+#### Demographic Findings
+
+8. **Neighborhoods with Higher Average Victim Age and Dead Animal Removal Requests**
+   - **Datasets Analyzed:** Average victim age in neighborhoods and dead animal removal service requests.
+   - **Hypothesis:** Neighborhoods with higher average victim age have more dead animal removal requests.
+   - **Correlation:** 0.2662
+   - **Explanation:** There is a weak positive correlation, suggesting that neighborhoods with an older average victim age might see a slight increase in dead animal removal requests. However, this relationship is not strong.
+
+9. **Council Districts with Higher Average Victim Age and Bulky Item Pickup Requests**
+   - **Datasets Analyzed:** Average victim age in council districts and bulky item pickup service requests.
+   - **Hypothesis:** Council districts with higher average victim age have more bulky item pickup requests.
+   - **Correlation:** -0.3654
+   - **Explanation:** There is a moderate negative correlation, indicating that council districts with an older average victim age tend to have fewer bulky item pickup requests. This suggests an inverse relationship between these variables.
+
+10. **Zipcodes with Higher Average Victim Age and Illegal Dumping Requests**
+    - **Datasets Analyzed:** Average victim age in zipcodes and illegal dumping pickup service requests.
+    - **Hypothesis:** Zipcodes with higher average victim age have more illegal dumping requests.
+    - **Correlation:** -0.2310
+    - **Explanation:** There is a weak negative correlation, suggesting that zipcodes with an older average victim age might see fewer illegal dumping requests. However, the relationship is not strong.

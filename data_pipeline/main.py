@@ -40,9 +40,7 @@ from data_pipeline.config import (
     PROCESSED_DATA_DIR,
     setup_logging,
 )
-from data_pipeline.analysis.contextual_relationship_agent import (
-    run_contextual_relationship_analysis,
-)
+from data_pipeline.analysis.llm_hypothesis_agent import LLMHypothesisAgent
 from data_pipeline.ingestion.loader import DatasetLoader
 from data_pipeline.ingestion.schema import SchemaProfiler
 from data_pipeline.ingestion.registry import DatasetRegistry
@@ -112,8 +110,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         "--no-relationship-analysis",
         action="store_true",
         help=(
-            "After a successful merge, skip contextual relationship analysis "
-            "(correlations, grouped summaries, plots)."
+            "After a successful merge, skip the LLM Hypothesis analysis."
         ),
     )
     return parser.parse_args(argv)
@@ -371,21 +368,18 @@ def _run_merge(
     logger.info("-" * 60)
 
     if run_relationship_analysis:
-        logger.info("=" * 60)
-        logger.info(
-            "CONTEXTUAL RELATIONSHIP ANALYSIS (autonomous; no SQL / no prompts)"
-        )
-        logger.info("=" * 60)
         merge_stem = f"{primary_name}_{context_name}"
         src = f"merged:{primary_name} + {context_name}"
-        try:
-            run_contextual_relationship_analysis(
-                result.merged_df,
-                output_stem=merge_stem,
-                source_description=src,
-            )
-        except Exception as exc:
-            logger.exception("Relationship analysis failed: %s", exc)
+
+        logger.info("=" * 60)
+        logger.info("LLM HYPOTHESIS ANALYSIS (Agentic Querying)")
+        logger.info("=" * 60)
+        agent = LLMHypothesisAgent()
+        agent.run_analysis(
+            result.merged_df,
+            output_stem=merge_stem,
+            source_description=src,
+        )
 
 
 def main() -> None:

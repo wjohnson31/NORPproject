@@ -203,8 +203,11 @@ You run: python -m data_pipeline --file <file> --name <name> [--merge-with <data
        - Validation report → data/processed/<primary>_<context>_merge_report.json
          │
          ▼ (future)
-    8. QUERY AGENT (W7–W8)
-       Generates and runs correlational queries across merged datasets.
+    8. LLM HYPOTHESIS AGENT (W7–W10)
+       Agent reviews schema profile + sample data and autonomously hypothesizes
+       sociological relationships between columns. Generates precise Pandas code 
+       to mathematically test them, executes it in a sandbox, and writes a synthesized 
+       plain-English summary report.
 ```
 
 ## Testing the Ingestion Pipeline
@@ -252,19 +255,13 @@ detected time columns (`tax_year`, `fiscal_year_end`), detected geo column
 - ✅ Merged dataset checked and saved — CSV + JSON validation report
 - ✅ LLM-based join key detection — `JoinAgent` uses OpenAI as fallback when heuristics fail
 
-### W7–W8 — Contextual Relationship Query Agent (Grouped Analysis)
-- Design Query Agent to generate correlational queries and results (no manual SQL queries)
-- Generate simple visualizations and correlational outputs
-- System autonomously produces multiple grouped contextual results
-- Confirm no need for user prompting for analysis
-- Merged summaries generated
-
-### W9–W10 — Interpretive Layer + Robust Query Expansion
-- Implement heuristics to rank findings
-- Filter out trivial correlational relationships
-- System outputs top-n correlational findings
-- Outputs both graphs and explanation
-- Weak relationships can be seen dropped
+### W7–W10 — LLM Hypothesis Engine & Interpretive Layer ✅
+- ✅ Design an LLM-based query ideation process instead of brute-force checking
+- ✅ System receives schema profile + dataset preview to propose localized data theories
+- ✅ Agent generates executable statistical code (Pandas) to test hypotheses
+- ✅ Safe sandboxed execution of agent's statistical checks
+- ✅ Agent receives the mathematical output back and writes a presentation-ready insight summary
+- ✅ Original "brute force" scripts preserved for fallback un-biased logging but skipped by pipeline
 
 ### W11–W12 — Scaled Testing across 10+ Datasets + Compile results
 - Stress test across additional context (GDP, poverty, disaster rates, internet rates, etc.)

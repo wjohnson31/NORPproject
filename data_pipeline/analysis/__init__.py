@@ -1,14 +1,16 @@
 """
-Analysis sub-package (W7–W8)
-============================
+Analysis sub-package (W7–W10)
+==============================
 
-Contextual relationship analysis: correlations, grouped aggregates, simple
-plots, and merged text summaries — without SQL or interactive user queries.
+* W7–W8: Contextual relationship analysis — correlations, grouped aggregates,
+  simple plots, and merged text summaries (no SQL / no user prompts).
+* W9–W10: Interpretive layer — heuristic ranking, trivial-relationship
+  filtering, scatterplots + explanations for top-N findings, and a visible
+  log of dropped weak relationships.
 """
 
-from data_pipeline.analysis.contextual_relationship_agent import (
-    run_contextual_relationship_analysis,
-    safe_output_stem,
-)
+from data_pipeline.analysis.llm_hypothesis_agent import LLMHypothesisAgent
 
-__all__ = ["run_contextual_relationship_analysis", "safe_output_stem"]
+__all__ = [
+    "LLMHypothesisAgent",
+]

@@ -1,0 +1,79 @@
+{
+  "generated_at": "2026-04-23T21:12:49.066911+00:00",
+  "source": "merged:traffic_collisions + myla311_full",
+  "analysis_method": "llm_hypothesis_engine",
+  "status": "success",
+  "hypotheses_tested": [
+    {
+      "hypothesis": "Neighborhoods with more traffic collisions also generate more graffiti removal requests",
+      "code": "df['month'] = pd.to_datetime(df['date_reported']).dt.to_period('M')\ndf_agg = df.groupby('area_name').agg({'dr_number': 'nunique', 'srnumber': lambda x: (df.loc[x.index, 'requesttype'] == 'Graffiti Removal').sum()}).dropna()\nresult = df_agg.corr().iloc[0, 1]\ndf_agg.to_csv(agg_csv_path)\nplt.scatter(df_agg['dr_number'], df_agg['srnumber'])\nplt.xlabel('Number of Traffic Collisions')\nplt.ylabel('Number of Graffiti Removal Requests')\nplt.title('Correlation between Traffic Collisions and Graffiti Removal Requests by Neighborhood')\nplt.plot(np.unique(df_agg['dr_number']), np.poly1d(np.polyfit(df_agg['dr_number'], df_agg['srnumber'], 1))(np.unique(df_agg['dr_number'])), color='red')\nplt.savefig(plot_path, dpi=150, bbox_inches='tight')\nplt.close()",
+      "executed_result": 0.1700089198249214,
+      "plot_saved": true,
+      "agg_csv_saved": true
+    },
+    {
+      "hypothesis": "Zipcodes with more traffic collisions also have more bulky item pickup requests",
+      "code": "df_agg = df.groupby('zipcode').agg({'dr_number': 'nunique', 'srnumber': lambda x: (df.loc[x.index, 'requesttype'] == 'Bulky Items').sum()}).dropna()\nresult = df_agg.corr().iloc[0, 1]\ndf_agg.to_csv(agg_csv_path)\nplt.scatter(df_agg['dr_number'], df_agg['srnumber'])\nplt.xlabel('Number of Traffic Collisions')\nplt.ylabel('Number of Bulky Item Pickup Requests')\nplt.title('Correlation between Traffic Collisions and Bulky Item Pickup Requests by Zipcode')\nplt.plot(np.unique(df_agg['dr_number']), np.poly1d(np.polyfit(df_agg['dr_number'], df_agg['srnumber'], 1))(np.unique(df_agg['dr_number'])), color='red')\nplt.savefig(plot_path, dpi=150, bbox_inches='tight')\nplt.close()",
+      "executed_result": 0.3848511523413003,
+      "plot_saved": true,
+      "agg_csv_saved": true
+    },
+    {
+      "hypothesis": "Council districts with more traffic collisions have more illegal dumping requests",
+      "code": "df_agg = df.groupby('cd').agg({'dr_number': 'nunique', 'srnumber': lambda x: (df.loc[x.index, 'requesttype'] == 'Illegal Dumping Pickup').sum()}).dropna()\nresult = df_agg.corr().iloc[0, 1]\ndf_agg.to_csv(agg_csv_path)\nplt.scatter(df_agg['dr_number'], df_agg['srnumber'])\nplt.xlabel('Number of Traffic Collisions')\nplt.ylabel('Number of Illegal Dumping Requests')\nplt.title('Correlation between Traffic Collisions and Illegal Dumping Requests by Council District')\nplt.plot(np.unique(df_agg['dr_number']), np.poly1d(np.polyfit(df_agg['dr_number'], df_agg['srnumber'], 1))(np.unique(df_agg['dr_number'])), color='red')\nplt.savefig(plot_path, dpi=150, bbox_inches='tight')\nplt.close()",
+      "executed_result": 0.46820906939414847,
+      "plot_saved": true,
+      "agg_csv_saved": true
+    },
+    {
+      "hypothesis": "Neighborhoods with higher average victim age have more dead animal removal requests",
+      "code": "df_agg = df.groupby('area_name').agg({'victim_age': 'mean', 'srnumber': lambda x: (df.loc[x.index, 'requesttype'] == 'Dead Animal Removal').sum()}).dropna()\nresult = df_agg.corr().iloc[0, 1]\ndf_agg.to_csv(agg_csv_path)\nplt.scatter(df_agg['victim_age'], df_agg['srnumber'])\nplt.xlabel('Average Victim Age')\nplt.ylabel('Number of Dead Animal Removal Requests')\nplt.title('Correlation between Average Victim Age and Dead Animal Removal Requests by Neighborhood')\nplt.plot(np.unique(df_agg['victim_age']), np.poly1d(np.polyfit(df_agg['victim_age'], df_agg['srnumber'], 1))(np.unique(df_agg['victim_age'])), color='red')\nplt.savefig(plot_path, dpi=150, bbox_inches='tight')\nplt.close()",
+      "executed_result": 0.26617329829073644,
+      "plot_saved": true,
+      "agg_csv_saved": true
+    },
+    {
+      "hypothesis": "Monthly spikes in traffic collisions correlate with monthly spikes in bulky item requests",
+      "code": "df['month'] = pd.to_datetime(df['date_reported']).dt.to_period('M')\ndf_agg = df.groupby('month').agg({'dr_number': 'nunique', 'srnumber': lambda x: (df.loc[x.index, 'requesttype'] == 'Bulky Items').sum()}).dropna()\nresult = df_agg.corr().iloc[0, 1]\ndf_agg.to_csv(agg_csv_path)\nplt.scatter(df_agg['dr_number'], df_agg['srnumber'])\nplt.xlabel('Number of Traffic Collisions')\nplt.ylabel('Number of Bulky Item Requests')\nplt.title('Correlation between Traffic Collisions and Bulky Item Requests by Month')\nplt.plot(np.unique(df_agg['dr_number']), np.poly1d(np.polyfit(df_agg['dr_number'], df_agg['srnumber'], 1))(np.unique(df_agg['dr_number'])), color='red')\nplt.savefig(plot_path, dpi=150, bbox_inches='tight')\nplt.close()",
+      "executed_result": 0.991679118051096,
+      "plot_saved": true,
+      "agg_csv_saved": true
+    },
+    {
+      "hypothesis": "Zipcodes with more traffic collisions have more graffiti removal requests",
+      "code": "df_agg = df.groupby('zipcode').agg({'dr_number': 'nunique', 'srnumber': lambda x: (df.loc[x.index, 'requesttype'] == 'Graffiti Removal').sum()}).dropna()\nresult = df_agg.corr().iloc[0, 1]\ndf_agg.to_csv(agg_csv_path)\nplt.scatter(df_agg['dr_number'], df_agg['srnumber'])\nplt.xlabel('Number of Traffic Collisions')\nplt.ylabel('Number of Graffiti Removal Requests')\nplt.title('Correlation between Traffic Collisions and Graffiti Removal Requests by Zipcode')\nplt.plot(np.unique(df_agg['dr_number']), np.poly1d(np.polyfit(df_agg['dr_number'], df_agg['srnumber'], 1))(np.unique(df_agg['dr_number'])), color='red')\nplt.savefig(plot_path, dpi=150, bbox_inches='tight')\nplt.close()",
+      "executed_result": 0.5046732370883132,
+      "plot_saved": true,
+      "agg_csv_saved": true
+    },
+    {
+      "hypothesis": "Council districts with higher average victim age have more bulky item pickup requests",
+      "code": "df_agg = df.groupby('cd').agg({'victim_age': 'mean', 'srnumber': lambda x: (df.loc[x.index, 'requesttype'] == 'Bulky Items').sum()}).dropna()\nresult = df_agg.corr().iloc[0, 1]\ndf_agg.to_csv(agg_csv_path)\nplt.scatter(df_agg['victim_age'], df_agg['srnumber'])\nplt.xlabel('Average Victim Age')\nplt.ylabel('Number of Bulky Item Pickup Requests')\nplt.title('Correlation between Average Victim Age and Bulky Item Pickup Requests by Council District')\nplt.plot(np.unique(df_agg['victim_age']), np.poly1d(np.polyfit(df_agg['victim_age'], df_agg['srnumber'], 1))(np.unique(df_agg['victim_age'])), color='red')\nplt.savefig(plot_path, dpi=150, bbox_inches='tight')\nplt.close()",
+      "executed_result": -0.3654473349229355,
+      "plot_saved": true,
+      "agg_csv_saved": true
+    },
+    {
+      "hypothesis": "Neighborhoods with more traffic collisions have more dead animal removal requests",
+      "code": "df_agg = df.groupby('area_name').agg({'dr_number': 'nunique', 'srnumber': lambda x: (df.loc[x.index, 'requesttype'] == 'Dead Animal Removal').sum()}).dropna()\nresult = df_agg.corr().iloc[0, 1]\ndf_agg.to_csv(agg_csv_path)\nplt.scatter(df_agg['dr_number'], df_agg['srnumber'])\nplt.xlabel('Number of Traffic Collisions')\nplt.ylabel('Number of Dead Animal Removal Requests')\nplt.title('Correlation between Traffic Collisions and Dead Animal Removal Requests by Neighborhood')\nplt.plot(np.unique(df_agg['dr_number']), np.poly1d(np.polyfit(df_agg['dr_number'], df_agg['srnumber'], 1))(np.unique(df_agg['dr_number'])), color='red')\nplt.savefig(plot_path, dpi=150, bbox_inches='tight')\nplt.close()",
+      "executed_result": 0.29911069579816957,
+      "plot_saved": true,
+      "agg_csv_saved": true
+    },
+    {
+      "hypothesis": "Monthly spikes in traffic collisions correlate with monthly spikes in illegal dumping requests",
+      "code": "df['month'] = pd.to_datetime(df['date_reported']).dt.to_period('M')\ndf_agg = df.groupby('month').agg({'dr_number': 'nunique', 'srnumber': lambda x: (df.loc[x.index, 'requesttype'] == 'Illegal Dumping Pickup').sum()}).dropna()\nresult = df_agg.corr().iloc[0, 1]\ndf_agg.to_csv(agg_csv_path)\nplt.scatter(df_agg['dr_number'], df_agg['srnumber'])\nplt.xlabel('Number of Traffic Collisions')\nplt.ylabel('Number of Illegal Dumping Requests')\nplt.title('Correlation between Traffic Collisions and Illegal Dumping Requests by Month')\nplt.plot(np.unique(df_agg['dr_number']), np.poly1d(np.polyfit(df_agg['dr_number'], df_agg['srnumber'], 1))(np.unique(df_agg['dr_number'])), color='red')\nplt.savefig(plot_path, dpi=150, bbox_inches='tight')\nplt.close()",
+      "executed_result": 0.9842515114802102,
+      "plot_saved": true,
+      "agg_csv_saved": true
+    },
+    {
+      "hypothesis": "Zipcodes with higher average victim age have more illegal dumping requests",
+      "code": "df_agg = df.groupby('zipcode').agg({'victim_age': 'mean', 'srnumber': lambda x: (df.loc[x.index, 'requesttype'] == 'Illegal Dumping Pickup').sum()}).dropna()\nresult = df_agg.corr().iloc[0, 1]\ndf_agg.to_csv(agg_csv_path)\nplt.scatter(df_agg['victim_age'], df_agg['srnumber'])\nplt.xlabel('Average Victim Age')\nplt.ylabel('Number of Illegal Dumping Requests')\nplt.title('Correlation between Average Victim Age and Illegal Dumping Requests by Zipcode')\nplt.plot(np.unique(df_agg['victim_age']), np.poly1d(np.polyfit(df_agg['victim_age'], df_agg['srnumber'], 1))(np.unique(df_agg['victim_age'])), color='red')\nplt.savefig(plot_path, dpi=150, bbox_inches='tight')\nplt.close()",
+      "executed_result": -0.23098553316573187,
+      "plot_saved": true,
+      "agg_csv_saved": true
+    }
+  ],
+  "merged_summary": "### Executive Summary of Correlation Analysis Findings\n\n#### Geographic Findings\n\n1. **Neighborhoods with Traffic Collisions and Graffiti Removal Requests**\n   - **Datasets Analyzed:** Traffic collision reports and graffiti removal service requests by neighborhood.\n   - **Hypothesis:** Neighborhoods with more traffic collisions also generate more graffiti removal requests.\n   - **Correlation:** 0.1700\n   - **Explanation:** There is a weak positive correlation between the number of traffic collisions and graffiti removal requests in neighborhoods. This suggests that areas with more traffic incidents might see a slight increase in graffiti removal requests, but the relationship is not strong.\n\n2. **Zipcodes with Traffic Collisions and Bulky Item Pickup Requests**\n   - **Datasets Analyzed:** Traffic collision reports and bulky item pickup service requests by zipcode.\n   - **Hypothesis:** Zipcodes with more traffic collisions also have more bulky item pickup requests.\n   - **Correlation:** 0.3849\n   - **Explanation:** There is a moderate positive correlation, indicating that zipcodes with higher traffic collisions tend to have more bulky item pickup requests. This suggests a somewhat stronger relationship compared to graffiti removal, but still not a strong one.\n\n3. **Council Districts with Traffic Collisions and Illegal Dumping Requests**\n   - **Datasets Analyzed:** Traffic collision reports and illegal dumping pickup service requests by council district.\n   - **Hypothesis:** Council districts with more traffic collisions have more illegal dumping requests.\n   - **Correlation:** 0.4682\n   - **Explanation:** This moderate positive correlation suggests that council districts experiencing more traffic collisions tend to have more illegal dumping requests. The relationship is stronger than the previous geographic findings.\n\n4. **Zipcodes with Traffic Collisions and Graffiti Removal Requests**\n   - **Datasets Analyzed:** Traffic collision reports and graffiti removal service requests by zipcode.\n   - **Hypothesis:** Zipcodes with more traffic collisions have more graffiti removal requests.\n   - **Correlation:** 0.5047\n   - **Explanation:** There is a moderate positive correlation, indicating that zipcodes with higher traffic collisions tend to have more graffiti removal requests. This relationship is relatively stronger compared to other geographic correlations.\n\n5. **Neighborhoods with Traffic Collisions and Dead Animal Removal Requests**\n   - **Datasets Analyzed:** Traffic collision reports and dead animal removal service requests by neighborhood.\n   - **Hypothesis:** Neighborhoods with more traffic collisions have more dead animal removal requests.\n   - **Correlation:** 0.2991\n   - **Explanation:** There is a weak to moderate positive correlation, suggesting that neighborhoods with more traffic collisions might see a slight increase in dead animal removal requests. However, the relationship is not particularly strong.\n\n#### Temporal Findings\n\n6. **Monthly Spikes in Traffic Collisions and Bulky Item Requests**\n   - **Datasets Analyzed:** Monthly traffic collision reports and bulky item pickup service requests.\n   - **Hypothesis:** Monthly spikes in traffic collisions correlate with monthly spikes in bulky item requests.\n   - **Correlation:** 0.9917\n   - **Explanation:** There is an extremely strong positive correlation, indicating that months with higher traffic collisions almost always coincide with more bulky item requests. This suggests a very strong temporal relationship between these two variables.\n\n7. **Monthly Spikes in Traffic Collisions and Illegal Dumping Requests**\n   - **Datasets Analyzed:** Monthly traffic collision reports and illegal dumping pickup service requests.\n   - **Hypothesis:** Monthly spikes in traffic collisions correlate with monthly spikes in illegal dumping requests.\n   - **Correlation:** 0.9843\n   - **Explanation:** Similar to the bulky item requests, there is an extremely strong positive correlation, showing that months with increased traffic collisions are strongly associated with more illegal dumping requests. This indicates a significant temporal relationship.\n\n#### Demographic Findings\n\n8. **Neighborhoods with Higher Average Victim Age and Dead Animal Removal Requests**\n   - **Datasets Analyzed:** Average victim age in neighborhoods and dead animal removal service requests.\n   - **Hypothesis:** Neighborhoods with higher average victim age have more dead animal removal requests.\n   - **Correlation:** 0.2662\n   - **Explanation:** There is a weak positive correlation, suggesting that neighborhoods with an older average victim age might see a slight increase in dead animal removal requests. However, this relationship is not strong.\n\n9. **Council Districts with Higher Average Victim Age and Bulky Item Pickup Requests**\n   - **Datasets Analyzed:** Average victim age in council districts and bulky item pickup service requests.\n   - **Hypothesis:** Council districts with higher average victim age have more bulky item pickup requests.\n   - **Correlation:** -0.3654\n   - **Explanation:** There is a moderate negative correlation, indicating that council districts with an older average victim age tend to have fewer bulky item pickup requests. This suggests an inverse relationship between these variables.\n\n10. **Zipcodes with Higher Average Victim Age and Illegal Dumping Requests**\n    - **Datasets Analyzed:** Average victim age in zipcodes and illegal dumping pickup service requests.\n    - **Hypothesis:** Zipcodes with higher average victim age have more illegal dumping requests.\n    - **Correlation:** -0.2310\n    - **Explanation:** There is a weak negative correlation, suggesting that zipcodes with an older average victim age might see fewer illegal dumping requests. However, the relationship is not strong."
+}

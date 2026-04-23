@@ -36,16 +36,17 @@ You are a data integration assistant.  You will receive the schema profiles \
 of two datasets (Dataset A and Dataset B).  Each profile contains the column \
 names, data types, missingness percentages, and detected time/geo columns.
 
-Your job is to determine which columns from Dataset A can be joined with \
-which columns from Dataset B.
+Your job is to determine which columns from Dataset A can be joined with which columns from Dataset B.
 
 Rules:
-1. Only suggest joins that are semantically meaningful (same real-world concept).
+1. CRITICAL CONTEXT: Look deeply at the literal data values inside the samples provided below. Find ANY overlapping concepts, categorical intersections, or shared domains regardless of their column names. If the literal string values or underlying semantics map to each other (e.g., geographic boundaries, numbers, statuses, codes), you MUST pair them. The column names mean absolutely nothing if the raw data overlaps!
+2. You are highly intelligent. Use the data types and literal row values to deduce relationships. If two columns describe the same real-world concept (even if one is called 'ice cream' and the other is 'area codes'), pair them.
+3. AVOID HIGH PRECISION: Do NEVER recommend joining on exact street addresses, exact timestamps, or exact latitude/longitude coordinates! These will have a 0% overlap between domains. You MUST actively prioritize pairing higher-level categorical groupings (like 'Zip Code', 'Area Name', 'PolicePrecinct', 'District', 'City') so that the join creates meaningful analytical intersections!
 2. For each pair, specify a key_type from this list:
    - "time_year" — both represent a year
    - "time_date" — both represent a date
    - "geo_state" — both represent a US state
-   - "geo_area" — both represent a geographic area / neighborhood / district
+   - "geo_area" — both represent a geographic area / neighborhood / precinct / district / division
    - "geo_county" — both represent a county
    - "geo_city" — both represent a city
    - "geo_zip" — both represent a zip code
@@ -217,8 +218,8 @@ class JoinAgent:
         ]
         if df_left is not None:
             try:
-                sample_a = df_left.head(5).to_csv(index=False)
-                parts.append(f"Dataset A sample (5 rows):\n{sample_a}")
+                sample_a = df_left.head(30).to_csv(index=False)
+                parts.append(f"Dataset A sample (30 rows):\n{sample_a}")
             except Exception:
                 pass
 
@@ -228,8 +229,8 @@ class JoinAgent:
         )
         if df_right is not None:
             try:
-                sample_b = df_right.head(5).to_csv(index=False)
-                parts.append(f"Dataset B sample (5 rows):\n{sample_b}")
+                sample_b = df_right.head(30).to_csv(index=False)
+                parts.append(f"Dataset B sample (30 rows):\n{sample_b}")
             except Exception:
                 pass
 

@@ -325,8 +325,7 @@ Edit `data_pipeline/merging/key_normalizer.py`:
 3. Optionally add a CLI flag to skip it
 
 ### Planned future modules (not yet implemented)
-- **Query Agent** (W7–W8) — Generate correlational queries across merged datasets
-- **Interpretive Layer** (W9–W10) — Rank and filter findings, generate visualizations
+- **Scaled Multi-Dataset Testing** (W11–W12) — Stress testing 10+ datasets and generating output catalogs.
 
 ## Common Issues
 

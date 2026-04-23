@@ -103,6 +103,14 @@ class DatasetLoader:
 
         df: pd.DataFrame = reader()
 
+        # Downsample massive datasets to 15,000 rows universally to prevent RAM / Merge explosions
+        if len(df) > 15000:
+            logger.info(
+                "Dataset %s exceeds safe limits (%d rows). Deterministically downsampling to exactly 15,000 rows.", 
+                self.file_path.name, len(df)
+            )
+            df = df.sample(n=15000, random_state=42).reset_index(drop=True)
+
         # Apply column normalization.
         df = self._normalize_columns(df)
 
