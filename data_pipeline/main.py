@@ -52,66 +52,15 @@ logger = logging.getLogger(__name__)
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
-    """Parse command-line arguments.
-
-    Parameters
-    ----------
-    argv : list[str], optional
-        Argument list (defaults to ``sys.argv[1:]``).
-
-    Returns
-    -------
-    argparse.Namespace
-        Parsed arguments with ``file``, ``name``, and optional merge attributes.
-    """
+    """Parse command-line arguments."""
     parser = argparse.ArgumentParser(
         prog="norp-ingest",
-        description="Ingest a raw dataset into the NORP data pipeline.",
+        description="Automated Synthesis: Provide two datasets to clean, merge, and analyze.",
     )
     parser.add_argument(
-        "--file", "-f",
-        required=True,
-        type=str,
-        help="Path to the raw data file (CSV, Excel, or JSON).",
-    )
-    parser.add_argument(
-        "--name", "-n",
-        required=True,
-        type=str,
-        help=(
-            "A short, descriptive name for the dataset "
-            "(e.g., 'irs_990_2020')."
-        ),
-    )
-    parser.add_argument(
-        "--no-clean",
-        action="store_true",
-        help="Skip the cleaning step (ingest + profile + register only).",
-    )
-    parser.add_argument(
-        "--merge-with",
-        type=str,
-        default=None,
-        metavar="DATASET",
-        help=(
-            "Name of an already-registered dataset to merge with after "
-            "ingestion. The current dataset is treated as primary by default."
-        ),
-    )
-    parser.add_argument(
-        "--as-context",
-        action="store_true",
-        help=(
-            "When merging, treat the newly ingested dataset as context "
-            "(the --merge-with dataset becomes primary)."
-        ),
-    )
-    parser.add_argument(
-        "--no-relationship-analysis",
-        action="store_true",
-        help=(
-            "After a successful merge, skip the LLM Hypothesis analysis."
-        ),
+        "files",
+        nargs=2,
+        help="Provide exactly two raw data files (CSV, Excel, or JSON).",
     )
     return parser.parse_args(argv)
 
@@ -385,23 +334,37 @@ def _run_merge(
 def main() -> None:
     """CLI entry point."""
     setup_logging()
-
     args = parse_args()
 
+    file_a, file_b = args.files
+    name_a = Path(file_a).stem.lower().replace(" ", "_").replace("-", "_")
+    name_b = Path(file_b).stem.lower().replace(" ", "_").replace("-", "_")
+
+    logger.info("=" * 60)
+    logger.info("AUTOMATED SYNTHESIS MODE")
+    logger.info("Source A: %s -> alias: %s", file_a, name_a)
+    logger.info("Source B: %s -> alias: %s", file_b, name_b)
+    logger.info("=" * 60)
+
     try:
+        # Step 1: Ingest File A
         ingest(
-            file_path=args.file,
-            dataset_name=args.name,
-            run_cleaning=not args.no_clean,
-            merge_with=args.merge_with,
-            as_context=args.as_context,
-            run_relationship_analysis=not args.no_relationship_analysis,
+            file_path=file_a,
+            dataset_name=name_a,
+            run_cleaning=True,           # Hardcoded for maximum automation
+            run_relationship_analysis=False, 
         )
-    except (FileNotFoundError, ValueError, RuntimeError) as exc:
-        logger.error("Ingestion failed: %s", exc)
-        sys.exit(1)
+        # Step 2: Ingest File B and Merge with A
+        ingest(
+            file_path=file_b,
+            dataset_name=name_b,
+            run_cleaning=True,
+            merge_with=name_a,
+            as_context=False,
+            run_relationship_analysis=True,
+        )
     except Exception as exc:
-        logger.exception("Unexpected error during ingestion: %s", exc)
+        logger.exception("Synthesis failed: %s", exc)
         sys.exit(1)
 
 

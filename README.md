@@ -5,15 +5,15 @@ An LLM-assisted data pipeline for nonprofit financial research and contextual di
 > **For AI/LLM context:** See [INSTRUCTIONS.md](INSTRUCTIONS.md) for a machine-readable
 > guide to building, running, testing, and extending this project.
 
+> **For a Proof of Concept/Demo:** See the [Proof of Concept Directory](proof_of_concept/) for previous results of our implementation
+
 ## Overview
 
 NORP - Frontier LLM Integration for Automated Dataset Cleaning and Correlation Query Results -  ingests nonprofit financial datasets and external socioeconomic data,
 cleans them using LLM-generated code, and will ultimately link them to
 autonomously surface correlational insights.
 
-**Current status (W5–W6 complete):** Raw datasets go in → profiled → cleaned
-via OpenAI → optionally merged with existing datasets → cleaned/merged CSV +
-transformation log + merge validation report come out.
+
 
 ## Project Structure
 
@@ -34,17 +34,22 @@ norp/
 │   │   ├── agent.py         # CleaningAgent — OpenAI-generated cleaning code
 │   │   ├── executor.py      # SafeCleaningExecutor — restricted execution
 │   │   └── transform_log.py # TransformationLog — step logging + JSON
-│   └── merging/
+│   ├── merging/
+│   │   ├── __init__.py
+│   │   ├── join_detector.py  # Heuristic join key detection (synonym groups)
+│   │   ├── join_agent.py     # LLM-based join key detection (OpenAI fallback)
+│   │   ├── key_normalizer.py # Join key value normalization (states, years)
+│   │   └── merge_engine.py   # Controlled merge with post-merge validation
+│   └── analysis/
 │       ├── __init__.py
-│       ├── join_detector.py  # Heuristic join key detection (synonym groups)
-│       ├── join_agent.py     # LLM-based join key detection (OpenAI fallback)
-│       ├── key_normalizer.py # Join key value normalization (states, years)
-│       └── merge_engine.py   # Controlled merge with post-merge validation
+│       └── llm_hypothesis_agent.py  # LLM Hypothesis Engine generating the correlational queries
 ├── data/
 │   ├── raw/                 # Drop source files here
 │   ├── processed/           # Profiles, registry, transform logs, merge reports
 │   ├── cleaned/             # Cleaned output CSVs (after cleaning pipeline)
-│   └── merged/              # Merged output CSVs (after merge step)
+│   ├── merged/              # Merged output CSVs (after merge step)
+│   ├── analysis/            # Generated charts, CSVs, and final text reports
+│   └── proof_of_concept/    # Previous high-quality results & POC demos
 ├── requirements.txt
 ├── README.md
 └── INSTRUCTIONS.md          # AI-facing project context for LLM workflows
@@ -91,71 +96,37 @@ The pipeline works without this — it just skips the cleaning step.
 source .venv/bin/activate
 ```
 
-### Ingest + clean a dataset
+### Automated Synthesis Mode
+
+The pipeline is now fully automated. You no longer need to manage cleaning, merging, or hypothesis testing manually with flags. Provide exactly two raw files, and the engine will orchestrate the rest.
 
 ```bash
-python -m data_pipeline --file <path-to-file> --name <dataset-name>
+python -m data_pipeline <dataset_a.csv> <dataset_b.csv>
 ```
 
 **Example:**
 
 ```bash
-python -m data_pipeline --file data/raw/sample_for_testing_extract.csv --name sample_for_testing
+python -m data_pipeline data/raw/Traffic_Collision_Data_from_2010_to_Present.csv data/raw/MyLA311_Service_Request_Data_2020_20260423.csv
 ```
 
-This will:
-1. Load the file (CSV, Excel, or JSON) into a DataFrame with normalized column names
-2. Generate a **dataset_profile** (schema, dtypes, missingness, time/geo columns, column roles) and save to `data/processed/<name>_profile.json`
-3. Send the profile + a data sample to OpenAI, receive cleaning code, execute it in a sandbox, and save the cleaned dataset to `data/cleaned/<name>_cleaned.csv` with a transformation log at `data/processed/<name>_transform_log.json`
-4. Register the dataset in `data/processed/registry.json`
+This will autonomously:
+1. **Ingest**: Load both files into memory, capping massive datasets at 15,000 rows for memory safety.
+2. **Profile**: Generate `dataset_profile` (schema, missingness, time/geo columns) and save them to `data/processed/`.
+3. **Clean**: Use OpenAI to clean and standardize the data (saving to `data/cleaned/`).
+4. **Merge**: Detect the broadest compatible join key (like a Police Precinct or Area) and execute the merge.
+5. **Analyze**: An AI Sociologist agent generates 10 relationships, tests them using Pandas, plots charts, and writes an Executive Summary.
 
-> **Ingest only (no cleaning):** If you want to skip the cleaning step, add `--no-clean`:
-> ```bash
-> python -m data_pipeline --file <path-to-file> --name <dataset-name> --no-clean
-> ```
-
-### Ingest + merge with an existing dataset
-
-```bash
-python -m data_pipeline --file <path-to-file> --name <dataset-name> --merge-with <existing-dataset>
-```
-
-**Example:**
-
-```bash
-# First, make sure the target dataset is already in the registry
-python -m data_pipeline --file data/raw/sample_for_testing_extract.csv --name sample_for_testing --no-clean
-
-# Then ingest a new dataset and merge it with the existing one
-python -m data_pipeline --file data/raw/state_unemployment_sample.csv --name state_unemployment --no-clean --merge-with sample_for_testing
-```
-
-This will perform all the standard steps above, then:
-5. Detect compatible join keys between the two datasets (heuristic synonym matching first, LLM fallback if needed)
-6. Normalize join key values (e.g., state names → abbreviations, date formats → years)
-7. Merge the datasets and validate the result (key coverage, NaN inflation, row multiplication)
-8. Save the merged CSV to `data/merged/` and a validation report to `data/processed/`
-
-> **Swap primary/context roles:** By default the newly ingested dataset is primary. Add `--as-context` to make the `--merge-with` dataset primary instead:
-> ```bash
-> python -m data_pipeline --file data/raw/state_unemployment_sample.csv --name state_unemployment --no-clean --merge-with sample_for_testing --as-context
-> ```
-
-### CLI flags
-
-| Flag | Short | Required | Description |
-|------|-------|----------|-------------|
-| `--file` | `-f` | Yes | Path to the raw data file (CSV, Excel, or JSON) |
-| `--name` | `-n` | Yes | A short identifier for the dataset (e.g., `irs_990_2020`) |
-| `--no-clean` | — | No | Skip the cleaning step (ingest + profile + register only) |
-| `--merge-with` | — | No | Name of an existing registered dataset to merge with |
-| `--as-context` | — | No | Treat the newly ingested dataset as context (right-side) in the merge |
+After a run is complete, navigate to `data/analysis/` to find your findings:
+- **`*_llm_insight_summary.txt`**: The final plain-English report.
+- **`*_llm_hypothesis_report.json`**: The technical breakdown of every test run.
+- **`*_hypothesis_N_chart.png`**: Visual scatter plots for every successful correlation.
 
 ## Pipeline Flow
-When you run the command on a fresh dataset:
+When you run the synthesis command, it coordinates two ingestion cycles followed by a merge:
 
 ```
-You run: python -m data_pipeline --file <file> --name <name> [--merge-with <dataset>]
+You run: python -m data_pipeline <dataset_a> <dataset_b>
          │
          ▼
     1. LOADER (loader.py)
@@ -215,57 +186,7 @@ You run: python -m data_pipeline --file <file> --name <name> [--merge-with <data
 Activate the virtual environment first: `source .venv/bin/activate`
 
 ```bash
-python -m data_pipeline --file data/raw/sample_for_testing_extract.csv --name sample_for_testing
+python -m data_pipeline data/raw/sample_for_testing_extract.csv data/raw/state_unemployment_sample.csv
 ```
 
-Look for: INFO logs confirming load success, 10 rows / 9 columns,
-detected time columns (`tax_year`, `fiscal_year_end`), detected geo column
-(`state`), and profile saved. After running, `data/processed/` should contain
-`sample_for_testing_profile.json` and `registry.json`.
-
-## Roadmap
-
-### W1–W2 — Workflow research + dataset scouting
-- Research previous data integration structure vs structured agent pipeline design
-- Finalize architecture
-- Evaluate Claude Opus 4.6 v Codex API/tool use
-- Scout nonprofit datasets and total results goal
-- Initialize repo structure
-- Select majority of datasets with documented schema
-- Finalize system architecture diagram
-- Initialize repo with data ingestion skeleton
-- Select LLM and editor for project use
-
-### W3–W4 — Data ingestion + cleaning pipeline (v1)
-- Implement file ingestion (CSV/XLSX/JSON)
-- Auto-generate schema + dataset_profile object
-- Connect cleaning agent to Claude
-- Execute returned cleaning code safely
-- Implement transformation logging
-- Raw dataset → cleaned dataset pipeline running
-- Transformation logs stored
-- dataset_profile JSON generated
-
-### W5–W6 — Multi-dataset capabilities + join engine ✅
-- ✅ Implement dataset registry structure (keys/metrics) — `column_roles` in SchemaProfiler
-- ✅ Normalize join keys (states, years) — `KeyNormalizer` with 50-state + territory mapping
-- ✅ Build controlled merge engine — `MergeEngine` with validation + reporting
-- ✅ Allow user to choose 'primary' and 'context' datasets — `--merge-with` + `--as-context` flags
-- ✅ Two cleaned datasets can be merged reliably — sample nonprofit + state unemployment merged at 100% key coverage
-- ✅ Merged dataset checked and saved — CSV + JSON validation report
-- ✅ LLM-based join key detection — `JoinAgent` uses OpenAI as fallback when heuristics fail
-
-### W7–W10 — LLM Hypothesis Engine & Interpretive Layer ✅
-- ✅ Design an LLM-based query ideation process instead of brute-force checking
-- ✅ System receives schema profile + dataset preview to propose localized data theories
-- ✅ Agent generates executable statistical code (Pandas) to test hypotheses
-- ✅ Safe sandboxed execution of agent's statistical checks
-- ✅ Agent receives the mathematical output back and writes a presentation-ready insight summary
-- ✅ Original "brute force" scripts preserved for fallback un-biased logging but skipped by pipeline
-
-### W11–W12 — Scaled Testing across 10+ Datasets + Compile results
-- Stress test across additional context (GDP, poverty, disaster rates, internet rates, etc.)
-- Improve ranking heuristics
-- Document end-to-end runs of 5 pairs of datasets
-- Record best results for final report
-
+Look for: INFO logs confirming load success, detection of geographic/time columns, and the final generation of sociological charts in the `data/analysis/` folder.
