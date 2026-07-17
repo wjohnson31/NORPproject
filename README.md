@@ -1,4 +1,4 @@
-# NORP — Nonprofit Research Pipeline
+# NORP — Nonprofit Research Pipeline 
 
 An LLM-assisted data pipeline for nonprofit financial research and contextual discovery.
 
